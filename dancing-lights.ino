@@ -233,10 +233,13 @@ void diamonds(uint16_t colour) {
     // plus or minus (middle plus the "radius"). We go from -len to 5 (board width) + len, and vice versa.
     for (int col = 2 + -dir * (len + 2); dir * col < dir * (2 + (len + 3) * dir); col = col + dir) {
       matrix.fillScreen(0);
-      matrix.drawLine(col + len, row, col, row - len, colour);
-      matrix.drawLine(col + len, row, col, row + len, colour);
-      matrix.drawLine(col - len, row, col, row - len, colour);
-      matrix.drawLine(col - len, row, col, row + len, colour);
+      
+      // Draw the middle row, then the progressively shorter offset rows:
+      matrix.drawLine(col - len, row, col + len, row, colour);
+      for (int offset = 1; offset <= len; offset++) {
+        matrix.drawLine(col - len + offset, row - offset, col + len - offset, row - offset, colour); 
+        matrix.drawLine(col - len + offset, row + offset, col + len - offset, row + offset, colour);
+      }
       matrix.show();
       delay(100);
     }
