@@ -31,6 +31,7 @@ void loop() {
   spinner(matrix.Color(40, 0, 0));  
   rectanglesOut(matrix.Color(55, 55, 0));
   diamonds(matrix.Color(0, 25, 35));
+  twinkle();
 }
 
 ////////////////////////////////////////////
@@ -61,7 +62,7 @@ class Drop {
     matrix.show();
   }
   
-  void step() {
+  void tick() {
     current_row++;
     
     // When a drop goes off-screen, re-initialize with new inputs
@@ -81,7 +82,7 @@ void rain() {
   while (millis() - start_time < duration) {
     matrix.fillScreen(drop_off);
     for (int num = 0; num < drop_count; num++) {
-      drops[num].step();
+      drops[num].tick();
       drops[num].draw();
     }
     delay(50);
@@ -243,5 +244,66 @@ void diamonds(uint16_t colour) {
       matrix.show();
       delay(100);
     }
+  }
+}
+
+// Twinkling lights, with randomized location and colour
+class Star {
+  private:
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t pixel_num;
+    int state;
+    int max_state = 32;
+
+  public:
+  void initialize() {
+    // Try to grab a pixel that is not already being used
+    // Can still get duplicates if initialized in the same tick
+    // but that's less likely, at least
+    do {
+      pixel_num = random(MATRIX_LENGTH * MATRIX_WIDTH);
+    } while (matrix.getPixelColor(pixel_num) != 0);
+
+    state = random(-max_state, 0);
+    red = random(50);
+    green = random(50);
+    blue = random(50);
+  }
+
+  void tick() {
+    if (state++ > max_state) {
+      matrix.setPixelColor(pixel_num, 0); // blank the pixel once we're done with it
+      initialize();
+    }
+  }
+
+  void draw() {
+    // brightness is divided by 1 / state, offset so that max brightness happens
+    // at max_state / 2 (middle of the twinkle)
+    int divisor = max(abs((max_state / 2) - state), 1);
+    matrix.setPixelColor(pixel_num, red / divisor, green / divisor, blue / divisor);
+    matrix.show();
+  }
+};
+
+void twinkle() {
+  int star_count = 5;
+  Star stars[star_count];
+  for (int count = 1; count < star_count; count++) {
+      stars[count] = Star();
+      stars[count].initialize();
+  }
+
+  int sequence_duration = 10000;
+  unsigned long start_millis = millis();
+  matrix.fillScreen(0);
+  while (millis() - start_millis < sequence_duration) {
+    for (int i = 0; i < star_count; i++) {
+      stars[i].tick();
+      stars[i].draw();
+    }
+    delay(50);
   }
 }
